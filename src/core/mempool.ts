@@ -148,11 +148,6 @@ const contract = new Contract(
 
                         await sendTelegramNote(message)
 
-
-                        //check if token is verified
-                        const verifyToken = await HelpersWrapper.isVerified(tokenToBuy);
-
-
                        /* function which will be implemented later here: for checking if the token is a scam by using the address from the rugcheck api
                        */
                         // if (verifyToken) {
