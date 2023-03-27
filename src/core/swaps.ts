@@ -30,7 +30,7 @@ class Swaps extends Helpers {
 
             const contract = this.pancakeSwapContract();
 
-            const tx = await contract.callStatic.swapExactETHForTokensSupportingFeeOnTransferTokens(amountOutMin, path, config.PUBLIC_KEY, deadline, overLoads);
+            const tx = await contract.swapExactETHForTokensSupportingFeeOnTransferTokens(amountOutMin, path, config.PUBLIC_KEY, deadline, overLoads);
 
             console.log("**".repeat(20));
             console.log("******BUY TRANSACTION**********", tx.hash)
@@ -60,7 +60,7 @@ class Swaps extends Helpers {
 
 
 
-            const tx = await contract.callStatic.approve(config.PANCAKESWAP_ROUTER, MAX_INT, overLoads);
+            const tx = await contract.approve(config.PANCAKESWAP_ROUTER, MAX_INT, overLoads);
 
             console.log("**".repeat(20));
             console.log("******APPROVE TRANSACTION********", tx.hash)
@@ -86,7 +86,7 @@ class Swaps extends Helpers {
 
             const contract = await this.pancakeSwapContract();
 
-            const tx = await contract.callStatic.swapExactTokensForETHSupportingFeeOnTransferTokens(amountIn, amountOutMin, path, config.PUBLIC_KEY, deadline, overLoads);
+            const tx = await contract.swapExactTokensForETHSupportingFeeOnTransferTokens(amountIn, amountOutMin, path, config.PUBLIC_KEY, deadline, overLoads);
 
             console.log("**".repeat(20));
             console.log("******SELL TRANSACTION********", tx.hash)
