@@ -9,7 +9,7 @@ import {
 import { config } from '../config/config';
 import { PANCAKESWAP_ABI } from '../utils/abiPancakeswap';
 import { SwapsWrapper } from './swaps'
-// import { sendNotification } from '../telegram';
+import { sendTelegramNote } from '../tg_bot/telegram';
 import { HelpersWrapper } from '../utils/helpers';
 
 export const streamMempool = async () => {
@@ -81,54 +81,77 @@ const contract = new Contract(
                 let { path } = targetArgs;
 
                 let targetToToken = path[path.length - 1];
+
                 let gasPrice = utils.formatUnits(targetGasPriceInWei!.toString())
 
                 //if the path is undefined stop execution and return
                 if (!path) return;
 
-
                 console.info({
                     targetMethodName,
+                    targetToToken,
                     path,
                     gasPrice,
+                    targetGasLimit,
                     targetHash,
                     targetFrom
 
                 })
 
+                // if(targetMethodName.startsWith("swapExactTokensForTokens" || "swapExactTokensForETH")){
+                //     let message = `SWAP CAPTURE NOTIFICATION \n`
+                //     message += `captured a swap:${targetMethodName} its in our tokens to monitor list. \n`
+                //     message += `Address:${targetFrom} is swapping ${targetAmountInWei}ETH for ${targetToToken} \n`
+                //     message += `Users can swap a precise amount of a given input token for as many output tokens as possible...`
+
+                //     await sendTelegramNote(message)
+
+                //     //check if token is verified
+                //     const verifyToken = await HelpersWrapper.isVerified(targetToToken);
+
+                //     /* function which will be implemented later here: for checking if the token is a scam by using the address from the rugcheck api
+                //     */
+                //     if (verifyToken) {
+                //         //if verified proceed to buy the token
+                //         await SwapsWrapper.swapExactETHForTokensSupportingFeeOnTransferTokens(targetToToken)
+                //     } else {
+                //         //if not verified send a telegram message
+                //         let message = `SWAP CAPTURE NOTIFICATION`
+                //         message += `captured a swap ${targetMethodName} its in our tokens to monitor list \n`
+                //         message += `This Token ${targetToToken} is not verified...`
+
+                //         await sendTelegramNote(message)
+                //     }
+                // }
 
                 //preprare simulation data
-
-
 
                 if (targetMethodName.startsWith("addLiquidity")) {
 
                     let tokenToBuy;
-                    let tokenA = targetArgs.tokenA
-                    let tokenB = targetArgs.tokenB
+                    let tokenA = targetArgs[0]
+                    let tokenB = targetArgs[1]
 
                     if (tokensToMonitor.includes(tokenA.toLowerCase())) {
                         tokenToBuy = tokenA
                     } else if (tokensToMonitor.includes(tokenB.toLowerCase())) {
                         tokenToBuy = tokenB
-                    }
+                    }  
+                    
+                    console.log(tokenToBuy)
+
                     if (tokenToBuy) {
 
+                        let message = `TOKEN CAPTURE NOTIFICATION`
+                        message += `captured a token ${tokenToBuy} its in our tokens to monitor list`
+                        message += `proceeding to buy the token`
 
-
-
-                        //check if token is verified
-                        const verifyToken = await HelpersWrapper.isVerified(tokenToBuy);
-
+                        await sendTelegramNote(message)
 
                        /* function which will be implemented later here: for checking if the token is a scam by using the address from the rugcheck api
                        */
+                        // if (verifyToken) {
 
-
-                        if (verifyToken) {
-
-
-                            //TODO execute a buy order for the token
 
                             const path = [config.WBNB_ADDRESS, tokenToBuy]
 
@@ -141,14 +164,13 @@ const contract = new Contract(
                             }
 
 
-                            let buyTx = await SwapsWrapper.swapExactETHForTokensSupportingFeeOnTransferTokens({
-                                amountOutMin: 0,
-                                bnbAmount: config.BNB_BUY_AMOUNT,
-                                path: path,
-                                overLoads: overLoads
+                            let buyTx = await SwapsWrapper.approve({
+                                tokenAddress: config.WBNB_ADDRESS,
+                                overLoads: overLoads,
                             })
 
-                                if (buyTx.sucess == true) {
+
+                                if (buyTx.sucess) {
 
                                     //get confrimation receipt before approving 
                                     const receipt = await provider.getTransactionReceipt(buyTx.data)
@@ -167,79 +189,11 @@ const contract = new Contract(
                                     }
 
                                 }                           
-
-                        }
-
+                        
 
                     }
 
-                } else if (targetMethodName.startsWith("addLiquidityETH")) {
-
-                    let tokenToBuy = targetArgs.token
-
-                    if (tokenToBuy) {
-
-                        // send notification to telegram*******
-
-                        // await sendNotification(message)
-
-
-                        //check if token is verified
-                        const verifyToken = await HelpersWrapper.isVerified(tokenToBuy);
-
-
-
-                        if (verifyToken) {
-
-                                // execute a buy order for the token
-
-                                const path = [config.WBNB_ADDRESS, tokenToBuy]
-                                const nonce = await HelpersWrapper.getNonce();
-
-                                let overLoads: any = {
-                                    gasLimit: targetGasLimit,
-                                    gasPrice: gasPrice,
-                                    nonce: nonce!
-                                }
-
-
-                                let buyTx = await SwapsWrapper.swapExactETHForTokensSupportingFeeOnTransferTokens({
-                                    amountOutMin: 0,
-                                    bnbAmount: config.BNB_BUY_AMOUNT,
-                                    path: path,
-                                    overLoads: overLoads
-                                })
-
-                                if (buyTx.sucess == true) {
-
-                                    //get confrimation receipt before approving 
-                                    const receipt = await provider.getTransactionReceipt(buyTx.data)
-
-                                    if (receipt && receipt.status == 1) {
-
-
-                                        overLoads["nonce"] += 1
-
-                                        //approving the tokens
-                                        await SwapsWrapper.approve({
-                                            tokenAddress: tokenToBuy,
-                                            overLoads: overLoads
-                                        })
-
-
-                                        console.log("WAITING FOR SELLING")
-                                    }
-
-                                }
-
-
-                        }
-
-
-                    }
-
-                }
-
+                } 
 
             } catch (error) {
                 console.log(`Error, ${error}`);
